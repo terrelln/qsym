@@ -1,37 +1,40 @@
-#!/bin/bash
-
-# check ptrace_scope for PIN
-if ! grep -qF "0" /proc/sys/kernel/yama/ptrace_scope; then
-  echo "Please run 'echo 0|sudo tee /proc/sys/kernel/yama/ptrace_scope'"
-  exit -1
-fi
+#!/bin/bash -e
 
 git submodule init
 git submodule update
 
 # install system deps
-sudo apt-get update
-sudo apt-get install -y libc6 libstdc++6 linux-libc-dev gcc-multilib \
-  llvm-dev g++ g++-multilib python python-pip \
-  lsb-release
+sudo yum install gcc-4.8.5 llvm-devel
+
+# Use gcc-4.8.5
+GCC=/bin/gcc
+GXX=/bin/g++
+$GCC --version
+$GXX --version
 
 # install z3
 pushd third_party/z3
-./configure
+if [ -d build ]; then
+  rm -rf build
+fi
+CC=$GCC CXX=$GXX ./configure
 cd build
-make -j$(nproc)
-sudo make install
+CC=$GCC CXX=$GXX make -j$(nproc)
+CC=$GCC CXX=$GXX sudo make install
 popd
 
-# build test directories
-pushd tests
-python build.py
-popd
+# Create the virtual environment
+
+VENV=$HOME/virtualenvs/qsym-py2
+if [ ! -d "$VENV" ]; then
+  pyenv virtualenv --version 'platform007/2.7.14' qsym-py2
+fi
+PIP="$VENV/bin/pip"
+CC=$GCC CXX=$GXX "$PIP" install .
 
 cat <<EOM
-Please install qsym by using (or check README.md):
+QSYM is installed to the virtual environment $VENV.
+Source the virtual environment to use QSYM.
 
-  $ virtualenv venv
-  $ source venv/bin/activate
-  $ pip install .
+  $ source $VENV/bin/activate
 EOM

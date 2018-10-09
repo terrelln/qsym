@@ -17,10 +17,6 @@ def build_pintool():
     if subprocess.call(["make", "-C", "qsym/pintool", "-j", str(mp.cpu_count())]) != 0:
         raise ValueError("Unable to build pintool")
 
-    if int(open("/proc/sys/kernel/yama/ptrace_scope").read()) != 0:
-        raise ValueError("Please disable yama/ptrace_scope:\n" \
-                       + "echo 0 > /proc/sys/kernel/yama/ptrace_scope")
-
 class MyBuild(DistutilsBuild):
     def run(self):
         self.execute(build_pintool, (), msg='Building pintool')
